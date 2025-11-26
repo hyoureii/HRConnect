@@ -1,0 +1,14 @@
+services:
+  elysia:
+    build: .
+    container_name: elysia-hrconnect
+    entrypoint: /app/out
+    ports:
+      - "3001:3000"
+    networks:
+      - hrconnect
+    restart: unless-stopped
+
+networks:
+  hrconnect:
+    external: true

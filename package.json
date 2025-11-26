@@ -3,7 +3,8 @@
   "version": "1.0.50",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "bun run --watch server/index.ts"
+    "dev": "bun run --watch server/index.ts",
+    "build": "bun build --target bun --outdir out server/index.ts"
   },
   "dependencies": {
     "elysia": "latest"
