@@ -1,0 +1,98 @@
+.page-container {
+  font-family: 'Poppins', sans-serif;
+  background-color: var(--light-grey-bg);
+  color: var(--dark-text);
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  background-color: var(--dark-text);
+  color: var(--white);
+  padding: 20px;
+}
+
+.app-name {
+  font-size: 24px;
+  font-weight: 700;
+  text-align: center;
+  padding: 10px 0;
+  margin-bottom: 30px;
+  color: var(--white);
+}
+
+.sidebar-menu {
+  list-style: none;
+}
+
+.sidebar-menu li {
+  margin-bottom: 10px;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--grey-text);
+  font-weight: 500;
+  transition:
+    background-color 0.3s,
+    color 0.3s;
+}
+
+.menu-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--white);
+}
+
+.menu-item.active {
+  background-color: var(--primary-blue);
+  color: var(--white);
+}
+
+.menu-item i {
+  width: 20px;
+  text-align: center;
+}
+
+.main-content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 40px;
+  background-color: var(--white);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.navbar-title {
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.logout-button {
+  text-decoration: none;
+  color: var(--grey-text);
+  font-weight: 500;
+  transition: color 0.3s;
+}
+
+.logout-button:hover {
+  color: var(--primary-blue);
+}
+
+.content-area {
+  padding: 40px;
+  flex-grow: 1;
+  overflow-y: auto;
+}
