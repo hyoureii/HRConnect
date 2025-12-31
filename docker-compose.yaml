@@ -1,13 +1,16 @@
 services:
-  elysia:
-    build: .
-    container_name: elysia-hrconnect
-    entrypoint: /app/out
+  db-dev:
+    image: postgres:18
+    environment:
+      POSTGRES_PASSWORD: hrconnect
+      POSTGRES_DB: hrconnect
     ports:
-      - "3001:3000"
+      - 127.0.0.1:8080:5432
+    restart: unless-stopped
     networks:
       - hrconnect
-    restart: unless-stopped
+    volumes:
+      - ./pgdata:/var/lib/postgresql
 
 networks:
   hrconnect:
