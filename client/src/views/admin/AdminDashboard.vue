@@ -1,15 +1,15 @@
 <template>
-  <Layout>
+  <MainLayout>
     <section id="dashboard" class="content-section">
-      <div class="profile-header">
-        <div class="profile-pic">
-          <i class="fa-solid fa-user"></i>
+        <div class="profile-header">
+          <div class="profile-pic">
+            <i class="fa-solid fa-user"></i>
+          </div>
+          <div class="welcome-text">
+            <h2>Hola, {{ userName }}!</h2>
+            <p>Enjoy your life and stay motivated!</p>
+          </div>
         </div>
-        <div class="welcome-text">
-          <h2>Hola, Asep!</h2>
-          <p>Enjoy your life and stay motivated!</p>
-        </div>
-      </div>
 
       <div class="widget-grid">
         <div class="widget text-widget">
@@ -45,13 +45,19 @@
         </div>
       </div>
     </section>
-  </Layout>
+  </MainLayout>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import Layout from '@/Layout.vue'
-import { client } from '@/utils/client'
+import { ref, onMounted, computed, inject } from 'vue'
+import MainLayout from '@/MainLayout.vue'
+import { useAuth } from '@/stores/auth'
+import { client } from '../../../lib/client'
+
+const store = useAuth()
+const formatDate = inject('formatDate') as (date: string) => string
+
+const userName = computed(() => store.session?.user?.name || 'User')
 
 const stats = ref({
   totalUsers: 0,
@@ -67,12 +73,12 @@ onMounted(async () => {
   isLoading.value = true
   try {
     const [statsResult, tripsResult] = await Promise.all([
-      client.api.dashboard.stats.get(),
-      client.api.trips.get({ query: { status: 'approved' } }),
+      client.api.stats.get(),
+      client.api.trips.get(),
     ])
 
     if (statsResult.data) {
-      stats.value.pendingLeaves = statsResult.data.pendingLeaves!
+      stats.value = statsResult.data
     }
 
     if (tripsResult.data) {
@@ -81,7 +87,7 @@ onMounted(async () => {
 
       businessTrips.value = tripsResult.data
         .filter(trip => trip.status === 'approved' && new Date(trip.startDate) >= today)
-        .slice(0, 2) // Show only 2 upcoming trips
+        .slice(0, 2)
     }
   } catch (err) {
     console.error('Error fetching dashboard data:', err)

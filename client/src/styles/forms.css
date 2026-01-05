@@ -35,6 +35,7 @@
 .card-form input[type='date'],
 .card-form input[type='number'],
 .card-form input[type='password'],
+.card-form input[type='email'],
 .card-form textarea,
 .card-form select {
   width: 100%;

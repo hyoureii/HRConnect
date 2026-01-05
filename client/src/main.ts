@@ -1,13 +1,16 @@
-import { createApp } from 'vue'
-import App from './App.vue'
-import router from './router'
-import Modals from './components/modals.vue'
+import { createApp } from 'vue';
+import { createPinia } from 'pinia';
+import App from './App.vue';
+import router from './router';
+import Modals from './components/dialogModals.vue';
 
-const app = createApp(App)
+const app = createApp(App);
+const pinia = createPinia();
 
-const modals = document.createElement('div')
-document.body.appendChild(modals)
-createApp(Modals).mount(modals)
-app.use(router)
+const modals = document.createElement('div');
+document.body.appendChild(modals);
+createApp(Modals).mount(modals);
+app.use(router);
 
-app.mount('#app')
+app.use(pinia);
+app.mount('#app');

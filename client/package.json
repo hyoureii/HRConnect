@@ -7,7 +7,7 @@
     "node": "^20.19.0 || >=22.12.0"
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "bunx --bun vite",
     "preview": "vite preview",
     "build": "bunx --bun vite build",
     "type-check": "vue-tsc --build",
@@ -15,7 +15,8 @@
   },
   "dependencies": {
     "@elysiajs/eden": "^1.4.6",
-    "@hrconnect/lib": "workspace:*",
+    "better-auth": "^1.4.10",
+    "pinia": "^3.0.4",
     "vue": "^3.5.26",
     "vue-router": "^4.6.4"
   },

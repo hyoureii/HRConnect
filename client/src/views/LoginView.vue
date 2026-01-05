@@ -46,10 +46,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { authClient } from '@hrconnect/lib'
 import { loginSchema, type LoginInput } from '../validation/schemas'
+import { useAuth } from '@/stores/auth'
 
 const router = useRouter()
+const store = useAuth()
 
 const formData = ref<LoginInput>({
   email: '',
@@ -79,21 +80,13 @@ const handleLogin = async () => {
     isLoading.value = true
     errorMessage.value = ''
 
-    const result = await authClient.signIn.email({
-      email: validation.data.email,
-      password: validation.data.password,
-    })
-
-    if (result.error) {
-      errorMessage.value = result.error.message || 'Login failed. Please try again.'
-      return
-    }
+    await store.login(validation.data.email, validation.data.password)
 
     await router.push({ name: "Login", force: true })
 
   } catch (error) {
     console.error('Login error:', error)
-    errorMessage.value = 'An error occurred. Please try again.'
+    errorMessage.value = 'Login failed. Please check your credentials and try again.'
   } finally {
     isLoading.value = false
   }

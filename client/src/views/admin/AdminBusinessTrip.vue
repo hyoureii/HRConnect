@@ -1,5 +1,5 @@
 <template>
-  <Layout>
+  <MainLayout>
     <section id="perjalanan-bisnis" class="content-section">
       <form class="card-form" @submit.prevent="submitBusinessTrip">
         <h2>Formulir Pengajuan Perjalanan Bisnis</h2>
@@ -52,35 +52,51 @@
         <table class="history-table">
           <thead>
             <tr>
+              <th>Nama Pemohon</th>
+              <th>Jenis</th>
+              <th>Tujuan</th>
               <th>Tanggal Mulai</th>
               <th>Tanggal Selesai</th>
-              <th>Tujuan</th>
               <th>Status</th>
+              <th>Aksi</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="(item, index) in filteredHistory" :key="index">
+              <td>{{ item.requesterName }}</td>
+              <td>{{ item.type }}</td>
+              <td>{{ item.activity }}</td>
               <td>{{ formatDate(item.startDate) }}</td>
               <td>{{ formatDate(item.endDate) }}</td>
-              <td>{{ item.activity }}</td>
               <td>
                 <span :class="['status-tag', item.statusClass]">{{ item.status }}</span>
+              </td>
+              <td>
+                <div v-if="item.status === 'Menunggu'" class="action-buttons">
+                  <button class="action-btn approve-btn" @click="handleApprove(item.id, 'approved')" title="Terima">
+                    <i class="fa-solid fa-check"></i>
+                  </button>
+                  <button class="action-btn reject-btn" @click="handleApprove(item.id, 'rejected')" title="Tolak">
+                    <i class="fa-solid fa-xmark"></i>
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
     </section>
-  </Layout>
+  </MainLayout>
 </template>
 
 <script setup lang="ts">
-import { ref, inject, computed } from 'vue'
-import Layout from '@/Layout.vue'
+import { ref, inject, onMounted, computed } from 'vue'
+import MainLayout from '@/MainLayout.vue'
+import { client } from '../../../lib/client'
+import { businessTripTypes } from '../../../lib/types'
 
-const openSuccessModal = inject('openSuccessModal')
-const formatDate = inject('formatDate')
-const businessTripTypes = inject('businessTripTypes')
+const openSuccessModal = inject('openSuccessModal') as (message?: string) => void
+const formatDate = inject('formatDate') as (date: string) => string
 const searchQuery = ref('')
 
 const form = ref({
@@ -90,29 +106,35 @@ const form = ref({
   type: '',
 })
 
-const history = ref([
-  {
-    startDate: '2025-09-20',
-    endDate: '2025-09-25',
-    activity: 'Rapat koordinasi manajemen regional - Pontianak',
-    status: 'Disetujui',
-    statusClass: 'status-approved',
-  },
-  {
-    startDate: '2025-10-15',
-    endDate: '2025-10-20',
-    activity: 'Inspeksi Kualitas Hasil Panen - Sanggau',
-    status: 'Disetujui',
-    statusClass: 'status-approved',
-  },
-  {
-    startDate: '2025-11-11',
-    endDate: '2025-11-13',
-    activity: 'Pelatihan Manajemen Mutu Panen - Medan',
-    status: 'Menunggu',
-    statusClass: 'status-pending',
-  },
-])
+const history = ref([])
+const isLoading = ref(false)
+
+onMounted(async () => {
+  await fetchTrips()
+})
+
+const fetchTrips = async () => {
+  isLoading.value = true
+  try {
+    const result = await client.api.trips.get()
+    if (result.data) {
+      history.value = result.data.map(item => ({
+        id: item.id,
+        startDate: item.startDate,
+        endDate: item.endDate,
+        activity: item.description,
+        status: item.status === 'approved' ? 'Disetujui' : 'Menunggu',
+        statusClass: item.status === 'approved' ? 'status-approved' : 'status-pending',
+        type: item.tripType,
+        requesterName: item.requesterName,
+      }))
+    }
+  } catch (err) {
+    console.error('Error fetching trips:', err)
+  } finally {
+    isLoading.value = false
+  }
+}
 
 const filteredHistory = computed(() => {
   if (!searchQuery.value) {
@@ -127,28 +149,30 @@ const filteredHistory = computed(() => {
   })
 })
 
-const submitBusinessTrip = () => {
-  history.value.unshift({
-    startDate: form.value.startDate,
-    endDate: form.value.endDate,
-    activity: form.value.activity,
-    type: form.value.type,
-    status: 'Menunggu',
-    statusClass: 'status-pending',
-  })
-
-  if (openSuccessModal) {
-    openSuccessModal(() => {
-      form.value.activity = ''
-      form.value.startDate = ''
-      form.value.endDate = ''
-      form.value.type = ''
+const submitBusinessTrip = async () => {
+  try {
+    await client.api.trips.post({
+      tripType: form.value.type,
+      description: form.value.activity,
+      startDate: form.value.startDate,
+      endDate: form.value.endDate,
     })
-  } else {
-    form.value.activity = ''
-    form.value.startDate = ''
-    form.value.endDate = ''
-    form.value.type = ''
+
+    await fetchTrips()
+    form.value = { activity: '', startDate: '', endDate: '', type: '' }
+    openSuccessModal('Pengajuan perjalanan bisnis berhasil!')
+  } catch (err) {
+    console.error('Error submitting business trip:', err)
+  }
+}
+
+const handleApprove = async (id: number, action: string) => {
+  try {
+    await client.api.trips[':id']({ id }).put({ status: action })
+    await fetchTrips()
+    openSuccessModal(`Pengajuan berhasil ${action === 'approved' ? 'disetujui' : 'ditolak'}!`)
+  } catch (err) {
+    console.error('Error updating trip:', err)
   }
 }
 </script>

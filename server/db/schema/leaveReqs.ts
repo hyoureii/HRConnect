@@ -1,10 +1,9 @@
-import { date, integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { date, integer, pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { users } from "./auth";
 import { statusEnum } from "./general";
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
-import { z } from "zod";
 
-export const leaveTypeEnum = z.enum([
+export const leaveTypeEnum = pgEnum("leave_types", [
     'Cuti Tahunan',
     'Cuti Sakit',
     'Cuti Melahirkan',
@@ -18,7 +17,7 @@ export const leaveTypeEnum = z.enum([
 
 export const leaveRequests = pgTable("leave_requests", {
     id: integer().generatedByDefaultAsIdentity().primaryKey(),
-    leaveType: text("leave_type").notNull(),
+    type: leaveTypeEnum().notNull(),
     description: text().notNull(),
     startDate: date("start_date").notNull(),
     endDate: date("end_date").notNull(),

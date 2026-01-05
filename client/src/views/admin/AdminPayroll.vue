@@ -1,5 +1,5 @@
 <template>
-  <Layout>
+  <MainLayout>
     <section id="payroll" class="content-section">
       <form class="card-form" @submit.prevent="submitReimbursement">
         <h2>Formulir Pengajuan Reimburse</h2>
@@ -53,35 +53,50 @@
         <table class="history-table">
           <thead>
             <tr>
-              <th>Tanggal Transaksi</th>
+              <th>Nama Pemohon</th>
+              <th>Jenis</th>
               <th>Keterangan</th>
               <th>Nominal</th>
               <th>Status</th>
+              <th>Aksi</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="(item, index) in filteredHistory" :key="index">
-              <td>{{ formatDate(item.date) }}</td>
+              <td>{{ item.requesterName }}</td>
+              <td>{{ item.reimbursementType }}</td>
               <td>{{ item.activity }}</td>
               <td>{{ formatCurrency(item.amount) }}</td>
               <td>
                 <span :class="['status-tag', item.statusClass]">{{ item.status }}</span>
+              </td>
+              <td>
+                <div v-if="item.status === 'Menunggu'" class="action-buttons">
+                  <button class="action-btn approve-btn" @click="handleApprove(item.id, 'approved')" title="Terima">
+                    <i class="fa-solid fa-check"></i>
+                  </button>
+                  <button class="action-btn reject-btn" @click="handleApprove(item.id, 'rejected')" title="Tolak">
+                    <i class="fa-solid fa-xmark"></i>
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
     </section>
-  </Layout>
+  </MainLayout>
 </template>
 
 <script setup lang="ts">
-import { ref, inject, computed } from 'vue'
-import Layout from '@/Layout.vue'
+import { ref, inject, onMounted, computed } from 'vue'
+import MainLayout from '@/MainLayout.vue'
+import { client } from '../../../lib/client'
+import { reimbursementTypes } from '../../../lib/types'
 
-const openSuccessModal = inject('openSuccessModal')
-const formatCurrency = inject('formatCurrency')
-const formatDate = inject('formatDate')
+const openSuccessModal = inject('openSuccessModal') as (message?: string) => void
+const formatCurrency = inject('formatCurrency') as (value: number) => string
+const formatDate = inject('formatDate') as (date: string) => string
 const searchQuery = ref('')
 
 const form = ref({
@@ -91,22 +106,35 @@ const form = ref({
   type: '',
 })
 
-const history = ref([
-  {
-    date: '2025-09-20',
-    activity: 'Transportasi biaya bensin',
-    amount: 150000,
-    status: 'Disetujui',
-    statusClass: 'status-approved',
-  },
-  {
-    date: '2025-11-15',
-    activity: 'Pembayaran hotel selama inspeksi',
-    amount: 1500000,
-    status: 'Menunggu',
-    statusClass: 'status-pending',
-  },
-])
+const history = ref([])
+const isLoading = ref(false)
+
+onMounted(async () => {
+  await fetchReimbursements()
+})
+
+const fetchReimbursements = async () => {
+  isLoading.value = true
+  try {
+    const result = await client.api.reimburse.get()
+    if (result.data) {
+      history.value = result.data.map(item => ({
+        id: item.id,
+        date: item.date,
+        activity: item.description,
+        amount: item.amount,
+        status: item.status === 'approved' ? 'Disetujui' : 'Menunggu',
+        statusClass: item.status === 'approved' ? 'status-approved' : 'status-pending',
+        requesterName: item.requesterName,
+        reimbursementType: item.type,
+      }))
+    }
+  } catch (err) {
+    console.error('Error fetching reimbursements:', err)
+  } finally {
+    isLoading.value = false
+  }
+}
 
 const filteredHistory = computed(() => {
   if (!searchQuery.value) {
@@ -120,28 +148,30 @@ const filteredHistory = computed(() => {
   })
 })
 
-const submitReimbursement = () => {
-  history.value.unshift({
-    date: form.value.date,
-    activity: form.value.activity,
-    amount: form.value.amount,
-    type: form.value.type,
-    status: 'Menunggu',
-    statusClass: 'status-pending',
-  })
-
-  if (openSuccessModal) {
-    openSuccessModal(() => {
-      form.value.activity = ''
-      form.value.date = ''
-      form.value.amount = ''
-      form.value.type = ''
+const submitReimbursement = async () => {
+  try {
+    await client.api.reimburse.post({
+      type: form.value.type,
+      description: form.value.activity,
+      date: form.value.date,
+      amount: Number(form.value.amount),
     })
-  } else {
-    form.value.activity = ''
-    form.value.date = ''
-    form.value.amount = ''
-    form.value.type = ''
+
+    await fetchReimbursements()
+    form.value = { activity: '', date: '', amount: '', type: '' }
+    openSuccessModal('Pengajuan reimburse berhasil!')
+  } catch (err) {
+    console.error('Error submitting reimbursement:', err)
+  }
+}
+
+const handleApprove = async (id: number, action: string) => {
+  try {
+    await client.api.reimburse[':id']({ id }).put({ status: action })
+    await fetchReimbursements()
+    openSuccessModal(`Pengajuan berhasil ${action === 'approved' ? 'disetujui' : 'ditolak'}!`)
+  } catch (err) {
+    console.error('Error updating reimbursement:', err)
   }
 }
 </script>

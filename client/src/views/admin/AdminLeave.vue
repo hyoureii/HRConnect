@@ -1,5 +1,5 @@
 <template>
-  <Layout>
+  <MainLayout>
     <section id="pengajuan-cuti" class="content-section">
       <form class="card-form" @submit.prevent="submitLeave">
         <h2>Formulir Pengajuan Cuti</h2>
@@ -168,16 +168,16 @@
         </div>
       </div>
     </section>
-  </Layout>
+  </MainLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, inject, onMounted } from 'vue'
-import Layout from '@/Layout.vue'
-import { client } from '@/utils/client'
-import { leaveTypes } from '@/utils/types'
+import MainLayout from '@/MainLayout.vue'
+import { client } from '../../../lib/client'
+import { leaveTypes } from '../../../lib/types'
 
-const openSuccessModal = inject('openSuccessModal')
+const openSuccessModal = inject('openSuccessModal') as (message?: string) => void
 const searchQuery = ref('')
 const requestSearchQuery = ref('')
 const isLoadingRequests = ref(false)
@@ -187,7 +187,7 @@ const showConfirmModal = ref(false)
 const confirmAction = ref('')
 const confirmTitle = ref('')
 const confirmMessage = ref('')
-const selectedRequestId = ref(null)
+const selectedRequestId = ref<number | null>(null)
 
 const leaveType = ref('')
 const reason = ref('')
@@ -206,7 +206,7 @@ const fetchLeaveRequests = async () => {
   isLoadingRequests.value = true
   error.value = ''
   try {
-    const result = await client.api.leaveRequests.get()
+    const result = await client.api.leave.get()
     if (result.data) {
       leaveRequests.value = result.data.filter(req => req.status === 'pending')
     }
@@ -221,7 +221,7 @@ const fetchLeaveRequests = async () => {
 const fetchLeaveHistory = async () => {
   isLoadingHistory.value = true
   try {
-    const result = await client.api.leaveRequests.get()
+    const result = await client.api.leave.get()
     if (result.data) {
       leaveHistory.value = result.data.filter(req => req.status !== 'pending')
     }
@@ -260,7 +260,7 @@ const filteredHistory = computed(() => {
 
 const submitLeave = async () => {
   try {
-    await client.api.leaveRequests.post({
+    await client.api.leave.post({
       leaveType: leaveType.value,
       description: reason.value,
       startDate: startDate.value,
@@ -268,17 +268,16 @@ const submitLeave = async () => {
     })
 
     // Refetch data
-    const result = await client.api.leaveRequests.get()
+    const result = await client.api.leave.get()
     if (result.data) {
       leaveHistory.value = result.data.filter(req => req.status !== 'pending')
     }
 
-    openSuccessModal(() => {
-      leaveType.value = ''
-      reason.value = ''
-      startDate.value = ''
-      endDate.value = ''
-    })
+    openSuccessModal('Pengajuan cuti berhasil!')
+    leaveType.value = ''
+    reason.value = ''
+    startDate.value = ''
+    endDate.value = ''
   } catch (err) {
     console.error('Error submitting leave request:', err)
     error.value = 'Failed to submit leave request'
@@ -309,12 +308,13 @@ const handleConfirmAction = async () => {
   const status = confirmAction.value === 'approve' ? 'approved' : 'refused'
 
   try {
-    await client.api.leaveRequests[':id']({ id: selectedRequestId.value }).put({ status })
+    await client.api.leave[':id']({ id: selectedRequestId.value }).put({ status })
 
     // Refetch data
     await fetchLeaveRequests()
     await fetchLeaveHistory()
     closeConfirmModal()
+    openSuccessModal('Pengajuan berhasil diperbarui!')
   } catch (err) {
     console.error('Error updating leave request:', err)
     error.value = 'Failed to update leave request'

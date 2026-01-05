@@ -19,8 +19,6 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 
 const goToDashboard = () => {
-  // Since role validation is done in router guard,
-  // users reaching this page should go back to login
   router.push({ name: 'Login' })
 }
 </script>

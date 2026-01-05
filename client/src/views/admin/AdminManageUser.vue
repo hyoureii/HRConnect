@@ -1,16 +1,11 @@
 <template>
-  <Layout>
+  <MainLayout>
     <section id="manage-user" class="content-section">
       <div class="widget full-width-widget">
         <div class="widget-header">
           <h3>Manajemen Pengguna</h3>
           <div class="search-box">
-            <input
-              type="text"
-              v-model="searchQuery"
-              placeholder="Cari Pengguna"
-              class="search-input"
-            />
+            <input type="text" v-model="searchQuery" placeholder="Cari Pengguna" class="search-input" />
             <button class="btn-search"><i class="fa-solid fa-magnifying-glass"></i></button>
           </div>
         </div>
@@ -60,6 +55,12 @@
               <input type="password" id="user-password" v-model="newUser.password" required />
             </div>
           </div>
+          <div class="form-group-row">
+            <div class="form-group">
+              <label for="user-email">Email</label>
+              <input type="email" id="user-email" v-model="newUser.email" required />
+            </div>
+          </div>
           <div class="form-group">
             <label for="user-role">Role</label>
             <select id="user-role" v-model="newUser.role" required>
@@ -80,32 +81,19 @@
           <h2 style="text-align: center; margin-bottom: 20px">Edit Pengguna</h2>
           <form @submit.prevent="promptSaveChanges">
             <div class="form-group" style="margin-bottom: 15px">
-              <label style="display: block; margin-bottom: 5px; font-weight: 500"
-                >Nama Pengguna</label
-              >
-              <input
-                type="text"
-                v-model="editingUser.name"
-                required
-                style="width: 100%; padding: 10px; border: 1px solid #dce4f2; border-radius: 8px"
-              />
+              <label style="display: block; margin-bottom: 5px; font-weight: 500">Nama Pengguna</label>
+              <input type="text" v-model="editingUser.name" required
+                style="width: 100%; padding: 10px; border: 1px solid #dce4f2; border-radius: 8px" />
             </div>
             <div class="form-group" style="margin-bottom: 15px">
               <label style="display: block; margin-bottom: 5px; font-weight: 500">Password</label>
-              <input
-                type="password"
-                v-model="editingUser.password"
-                placeholder="Masukkan password baru (opsional)"
-                style="width: 100%; padding: 10px; border: 1px solid #dce4f2; border-radius: 8px"
-              />
+              <input type="password" v-model="editingUser.password" placeholder="Masukkan password baru (opsional)"
+                style="width: 100%; padding: 10px; border: 1px solid #dce4f2; border-radius: 8px" />
             </div>
             <div class="form-group" style="margin-bottom: 25px">
               <label style="display: block; margin-bottom: 5px; font-weight: 500">Role</label>
-              <select
-                v-model="editingUser.role"
-                required
-                style="width: 100%; padding: 10px; border: 1px solid #dce4f2; border-radius: 8px"
-              >
+              <select v-model="editingUser.role" required
+                style="width: 100%; padding: 10px; border: 1px solid #dce4f2; border-radius: 8px">
                 <option value="admin">Admin</option>
                 <option value="hrd">HRD</option>
                 <option value="supervisor">Supervisor</option>
@@ -113,10 +101,7 @@
                 <option value="employee">Employee</option>
               </select>
             </div>
-            <div
-              class="modal-actions"
-              style="justify-content: flex-end; gap: 10px; display: flex; margin-top: 25px"
-            >
+            <div class="modal-actions" style="justify-content: flex-end; gap: 10px; display: flex; margin-top: 25px">
               <button type="button" class="btn-confirm-no" @click="closeEditModal">Batal</button>
               <button type="submit" class="btn-confirm-yes">Simpan</button>
             </div>
@@ -146,11 +131,7 @@
           <h2>Konfirmasi Hapus</h2>
           <p>Apakah Anda yakin ingin menghapus pengguna ini?</p>
           <div class="modal-actions">
-            <button
-              class="btn-confirm-yes"
-              style="background-color: var(--danger-red)"
-              @click="confirmDelete"
-            >
+            <button class="btn-confirm-yes" style="background-color: var(--danger-red)" @click="confirmDelete">
               Ya, Hapus
             </button>
             <button class="btn-confirm-no" @click="showDeleteModal = false">Batal</button>
@@ -171,39 +152,39 @@
         </div>
       </div>
     </section>
-  </Layout>
+  </MainLayout>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
-import Layout from '@/Layout.vue'
+import { ref, reactive, computed, onMounted, inject } from 'vue'
+import MainLayout from '@/MainLayout.vue'
+import { useAuth } from '@/stores/auth'
+import { authClient } from '../../../lib/auth-client'
+import type { UserWithRole } from 'better-auth/plugins'
+import { type Roles } from '../../../../server/auth/roles'
+
+const store = useAuth()
+const openSuccessModal = inject('openSuccessModal') as (message?: string) => void
 
 const searchQuery = ref('')
+const users = ref<UserWithRole[]>([])
+const isLoading = ref(false)
 
-const users = ref([
-  { name: 'Fizryan', roleLabel: 'HRD', roleClass: 'hrd', status: 'Aktif', statusClass: 'active' },
-  {
-    name: 'Haidar',
-    roleLabel: 'Supervisor',
-    roleClass: 'supervisor',
-    status: 'Aktif',
-    statusClass: 'active',
-  },
-  {
-    name: 'Naufal',
-    roleLabel: 'Finance',
-    roleClass: 'finance',
-    status: 'Aktif',
-    statusClass: 'active',
-  },
-  {
-    name: 'Fathir',
-    roleLabel: 'Employee',
-    roleClass: 'employee',
-    status: 'Aktif',
-    statusClass: 'active',
-  },
-])
+onMounted(async () => {
+  await fetchUsers()
+})
+
+const fetchUsers = async () => {
+  isLoading.value = true
+  try {
+    const result = await authClient.admin.listUsers({ query: {} })
+    if (result) { users.value = result.data ? result.data.users : [] }
+  } catch (err) {
+    console.error('Error fetching users:', err)
+  } finally {
+    isLoading.value = false
+  }
+}
 
 const filteredUsers = computed(() => {
   if (!searchQuery.value) {
@@ -217,42 +198,38 @@ const newUser = ref({
   name: '',
   password: '',
   role: '',
+  email: ''
 })
 
 const showEditModal = ref(false)
 const showConfirmSaveModal = ref(false)
 const showDeleteModal = ref(false)
-const showSuccessModal = ref(false)
-const successMessage = ref('')
 const targetIndex = ref(-1)
 const editingUser = reactive({
   name: '',
   password: '',
   role: '',
+  email: ''
 })
 
-const addUser = () => {
-  const roleMap = {
-    admin: { label: 'Admin', class: 'admin' },
-    hrd: { label: 'HRD', class: 'hrd' },
-    supervisor: { label: 'Supervisor', class: 'supervisor' },
-    finance: { label: 'Finance', class: 'finance' },
-    employee: { label: 'Employee', class: 'employee' },
+const addUser = async () => {
+  try {
+    const result = await authClient.signUp.email({
+      name: newUser.value.name,
+      password: newUser.value.name,
+      email: newUser.value.name
+    })
+    if (result.error) throw result.error
+    await authClient.admin.setRole({
+      userId: result.data.user.id,
+      role: newUser.value.role
+    })
+    await fetchUsers()
+    newUser.value = { name: '', password: '', role: '', email: '' }
+    openSuccessModal('Pengguna berhasil ditambahkan!')
+  } catch (err) {
+    console.error('Error adding user:', err)
   }
-
-  const roleInfo = roleMap[newUser.value.role]
-
-  users.value.push({
-    name: newUser.value.name,
-    roleLabel: roleInfo.label,
-    roleClass: roleInfo.class,
-    status: 'Aktif',
-    statusClass: 'active',
-  })
-
-  newUser.value.name = ''
-  newUser.value.password = ''
-  newUser.value.role = ''
 }
 
 const deleteUser = (user) => {
@@ -263,12 +240,17 @@ const deleteUser = (user) => {
   }
 }
 
-const confirmDelete = () => {
-  if (targetIndex.value !== -1) {
-    users.value.splice(targetIndex.value, 1)
+const confirmDelete = async () => {
+  try {
+    const userId = users.value[targetIndex.value].id
+
+    await store.deleteUser(userId)
+    await fetchUsers()
     showDeleteModal.value = false
-    successMessage.value = 'Pengguna berhasil dihapus'
-    showSuccessModal.value = true
+    openSuccessModal('Pengguna berhasil dihapus!')
+    targetIndex.value = -1
+  } catch (err) {
+    console.error('Error deleting user:', err)
   }
 }
 
@@ -294,26 +276,22 @@ const cancelSave = () => {
   showEditModal.value = true
 }
 
-const confirmSave = () => {
-  if (targetIndex.value !== -1) {
-    const roleMap = {
-      admin: { label: 'Admin', class: 'admin' },
-      hrd: { label: 'HRD', class: 'hrd' },
-      supervisor: { label: 'Supervisor', class: 'supervisor' },
-      finance: { label: 'Finance', class: 'finance' },
-      employee: { label: 'Employee', class: 'employee' },
-    }
+const confirmSave = async () => {
+  try {
+    const userId = users.value[targetIndex.value].id
 
-    const roleInfo = roleMap[editingUser.role]
+    await store.updateUser(userId, {
+      name: editingUser.name,
+      ...(editingUser.password && { password: editingUser.password }),
+      role: editingUser.role,
+    })
 
-    users.value[targetIndex.value].name = editingUser.name
-    users.value[targetIndex.value].roleLabel = roleInfo.label
-    users.value[targetIndex.value].roleClass = roleInfo.class
-
+    await fetchUsers()
     showConfirmSaveModal.value = false
-    successMessage.value = 'Perubahan berhasil disimpan'
-    showSuccessModal.value = true
+    openSuccessModal('Perubahan berhasil disimpan!')
     targetIndex.value = -1
+  } catch (err) {
+    console.error('Error updating user:', err)
   }
 }
 
@@ -356,22 +334,27 @@ const closeSuccessModal = () => {
   font-size: 12px;
   font-weight: 500;
 }
+
 .role-tag.employee {
   background-color: #eaf2ff;
   color: #0066ff;
 }
+
 .role-tag.supervisor {
   background-color: #d4efdf;
   color: #155724;
 }
+
 .role-tag.finance {
   background-color: #f8d7da;
   color: #721c24;
 }
+
 .role-tag.admin {
   background-color: #fdebd0;
   color: #856404;
 }
+
 .role-tag.hrd {
   background-color: #d6d8db;
   color: #383d41;
@@ -383,10 +366,12 @@ const closeSuccessModal = () => {
   font-size: 12px;
   font-weight: 500;
 }
+
 .status-tag.active {
   background-color: #d4efdf;
   color: #155724;
 }
+
 .status-tag.non-active {
   background-color: #f8d7da;
   color: #721c24;
@@ -491,6 +476,7 @@ const closeSuccessModal = () => {
   background-color: var(--primary-blue);
   color: white;
 }
+
 .btn-confirm-yes:hover {
   background-color: #0052cc;
 }
@@ -499,6 +485,7 @@ const closeSuccessModal = () => {
   background-color: #e0e0e0;
   color: #333;
 }
+
 .btn-confirm-no:hover {
   background-color: #d0d0d0;
 }
