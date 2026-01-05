@@ -1,0 +1,17 @@
+services:
+  db-dev:
+    image: postgres:18
+    environment:
+      POSTGRES_PASSWORD: hrconnect
+      POSTGRES_DB: hrconnect
+    ports:
+      - 127.0.0.1:8080:5432
+    restart: unless-stopped
+    networks:
+      - hrconnect
+    volumes:
+      - ./pgdata:/var/lib/postgresql
+
+networks:
+  hrconnect:
+    external: true

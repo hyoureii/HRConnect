@@ -1,0 +1,59 @@
+.card-form {
+  background-color: var(--white);
+  padding: 30px;
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+}
+
+.card-form h2 {
+  margin-top: 0;
+  margin-bottom: 25px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group-row {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.form-group-row .form-group {
+  flex-grow: 1;
+  margin-bottom: 0;
+}
+
+.card-form label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.card-form input[type='text'],
+.card-form input[type='date'],
+.card-form input[type='number'],
+.card-form input[type='password'],
+.card-form input[type='email'],
+.card-form textarea,
+.card-form select {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 16px;
+  font-family: 'Poppins', sans-serif;
+  background-color: var(--white);
+  transition:
+    border-color 0.3s,
+    box-shadow 0.3s;
+}
+
+.card-form input:focus,
+.card-form textarea:focus,
+.card-form select:focus {
+  outline: none;
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
+}
