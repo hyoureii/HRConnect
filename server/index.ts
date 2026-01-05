@@ -56,6 +56,50 @@ const app = new Elysia({ prefix: "/api" })
     }))
     .use(authPaths)
 
+    .get("/dashboard/stats", async ({ request: { headers } }) => {
+        const session = await auth.api.getSession({ headers });
+        if (!session) return { error: "Unauthorized" };
+
+        const totalUsers = await db.select().from(users);
+        const pendingLeaves = await db.select().from(leaveRequests)
+            .where(eq(leaveRequests.status, "pending"));
+        const pendingTrips = await db.select().from(trips)
+            .where(eq(trips.status, "pending"));
+        const pendingReimbursements = await db.select().from(reimbursements)
+            .where(eq(reimbursements.status, "pending"));
+
+        return {
+            totalUsers: totalUsers.length,
+            pendingLeaves: pendingLeaves.length,
+            pendingTrips: pendingTrips.length,
+            pendingReimbursements: pendingReimbursements.length,
+        };
+    })
+
+    .get("/users/me/role", async ({ request: { headers } }) => {
+        const session = await auth.api.getSession({ headers });
+        if (!session) {
+            return { roleId: null, roleName: null };
+        }
+
+        const userId = session.user.id;
+        const userRole = await db
+            .select({
+                roleId: userRoles.roleId,
+                roleName: roles.name
+            })
+            .from(userRoles)
+            .innerJoin(roles, eq(userRoles.roleId, roles.id))
+            .where(eq(userRoles.userId, parseInt(userId)))
+            .limit(1);
+
+        if (userRole.length === 0) {
+            return { roleId: null, roleName: null };
+        }
+
+        return userRole[0];
+    }, {
+        auth: true
     .get("/leave-requests", async ({ request: { headers }, query }) => {
         const session = await auth.api.getSession({ headers });
         if (!session) return { error: "Unauthorized" };
